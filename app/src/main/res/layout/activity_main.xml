@@ -8,7 +8,7 @@
 
 <!--Add Placeholder Fragment Here-->
     <fragment
-        android:name="com.example.android.jmcmillon.sunshine.PlaceHolderFragment"
+        android:name="com.example.android.jmcmillon.sunshine.ForecastFragment"
         android:id="@+id/placeholder_fragment"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
