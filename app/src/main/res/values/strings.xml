@@ -6,4 +6,31 @@
     <string name="title_activity_main">MainActivity</string>
     <string name="action_settings">Settings</string>
     <string name="action_refresh" translatable="false">Refresh</string>
+    <string name="title_activity_detail">DetailActivity</string>
+    <string name="title_activity_settings">Settings</string>
+
+    <!-- Key name for storing location in SharedPreference [CHAR LIMIT=NONE]-->
+    <string name="pref_location_key" translatable="false">locations</string>
+
+    <!-- Default postal code for location preference [CHAR LIMIT=NONE] -->
+    <string name="pref_location_default" translatable="false">27513</string>
+
+    <!-- Temperature Units-->
+    <string name="pref_units_label">Temperature Units</string>
+    <string name="pref_units_key">units</string>
+    <string name="pref_unit_metric">Metric</string>
+    <string name="pref_unit_imperial">Imperial</string>
+
+    <string-array name="pref_units_values">
+        <item>Metric</item>
+        <item>Imperial</item>
+    </string-array>
+
+    <string-array name="pref_unit_options">
+        <item>Metric</item>
+        <item>Imperial</item>
+    </string-array>
+
+
+
 </resources>
