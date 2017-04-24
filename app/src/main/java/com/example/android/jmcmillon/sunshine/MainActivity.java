@@ -10,6 +10,8 @@ import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 
+import com.example.android.jmcmillon.sunshine.sync.SunshineSyncAdapter;
+
 public class MainActivity extends AppCompatActivity implements ForecastFragment.Callback{
     private final String LOG_TAG = MainActivity.class.getSimpleName();
 
@@ -46,6 +48,9 @@ public class MainActivity extends AppCompatActivity implements ForecastFragment.
         ForecastFragment forecastFragment = ( (ForecastFragment)getSupportFragmentManager()
                 .findFragmentById(R.id.fragment_forecast));
         forecastFragment.setUseTodayLayout(!mTwoPane);
+
+//        SunshineSyncAdapter.getSyncAccount(this);
+        SunshineSyncAdapter.initializeSyncAdapter(this);
     }
 
     @Override
@@ -68,36 +73,10 @@ public class MainActivity extends AppCompatActivity implements ForecastFragment.
             return true;
         }
 
-        if (id == R.id.action_map) {
-            openPreferredLocationInMap();
-        }
-
         return super.onOptionsItemSelected(item);
     }
 
-    private void openPreferredLocationInMap() {
-        SharedPreferences sharedPrefs = PreferenceManager.getDefaultSharedPreferences(this);
-        String location = sharedPrefs.getString(getString(
-                R.string.pref_location_key),
-                getString(R.string.pref_location_default));
 
-        // Using the URI scheme for showing a location found on a map. This intent is detailed in
-        // the "Common Intents" page of the Android's developer site:
-        // http://developer.android.com/guide/components/intents-common.html#Maps
-        Uri geolocation = Uri.parse("geo:0,0?").buildUpon()
-                .appendQueryParameter("q", location).build();
-
-        Intent mapIntent = new Intent(Intent.ACTION_VIEW); // action view displays data to the user
-        mapIntent.setData(geolocation);
-
-        // Only start activity if it resolves successfully
-        if (mapIntent.resolveActivity(getPackageManager()) != null) {
-            startActivity(mapIntent);
-        } else {
-            Log.d(LOG_TAG, "Couldn't call " + location + ", no receiving apps installed");
-        }
-
-    }
 
     @Override
     protected void onStart() {

@@ -18,18 +18,22 @@ import android.widget.AdapterView;
 import android.widget.ListView;
 
 import com.example.android.jmcmillon.sunshine.data.WeatherContract;
-import com.example.android.jmcmillon.sunshine.service.SunshineService;
+import com.example.android.jmcmillon.sunshine.sync.SunshineSyncAdapter;
 
 
 public class ForecastFragment extends Fragment implements LoaderManager.LoaderCallbacks<Cursor> {
-    private ForecastAdapter mForecastAdapter;
-
-    private ListView mListView;
-    private int mPosition = ListView.INVALID_POSITION;
-    private boolean mUseTodayLayout;
-
+    // These indices are tied to FORECAST_COLUMNS.  If FORECAST_COLUMNS changes, these
+    // must change.
+    static final int COL_WEATHER_ID = 0;
+    static final int COL_WEATHER_DATE = 1;
+    static final int COL_WEATHER_DESC = 2;
+    static final int COL_WEATHER_MAX_TEMP = 3;
+    static final int COL_WEATHER_MIN_TEMP = 4;
+    static final int COL_LOCATION_SETTING = 5;
+    static final int COL_WEATHER_CONDITION_ID = 6;
+    static final int COL_COORD_LAT = 7;
+    static final int COL_COORD_LONG = 8;
     private static final String SELECTED_KEY = "selected_position";
-
     private static final int FORECAST_LOADER = 0; //loader ID
     // For the forecast view we're showing only a small subset of the stored data.
     // Specify the columns we need.
@@ -49,34 +53,18 @@ public class ForecastFragment extends Fragment implements LoaderManager.LoaderCa
             WeatherContract.WeatherEntry.COLUMN_WEATHER_ID,
             WeatherContract.LocationEntry.COLUMN_COORD_LAT,
             WeatherContract.LocationEntry.COLUMN_COORD_LONG
+
+
     };
-    // These indices are tied to FORECAST_COLUMNS.  If FORECAST_COLUMNS changes, these
-    // must change.
-    static final int COL_WEATHER_ID = 0;
-    static final int COL_WEATHER_DATE = 1;
-    static final int COL_WEATHER_DESC = 2;
-    static final int COL_WEATHER_MAX_TEMP = 3;
-    static final int COL_WEATHER_MIN_TEMP = 4;
-    static final int COL_LOCATION_SETTING = 5;
-    static final int COL_WEATHER_CONDITION_ID = 6;
-    static final int COL_COORD_LAT = 7;
-    static final int COL_COORD_LONG = 8;
+    private ForecastAdapter mForecastAdapter;
+    private ListView mListView;
+    private int mPosition = ListView.INVALID_POSITION;
+    private boolean mUseTodayLayout;
 
-
-
-    /**
-     * A callback interface that all activities containing this fragment must implement. This
-     * mechanism allows activities to be notified of item selections.
-     */
-    public interface Callback {
-        // Callback for when an item has been selected.
-         public void onItemSelected(Uri dateUri);
-    }
 
     public ForecastFragment() {
         // Required empty public constructor
     }
-
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -96,18 +84,52 @@ public class ForecastFragment extends Fragment implements LoaderManager.LoaderCa
         // automatically handle clocks on the Home/Up button, so long
         // as you specify a parent activity in AndroidManifest.xml
         int id = item.getItemId();
-        if (id == R.id.action_refresh) {
-            updateWeather();
-            return true;
-        }
+//        if (id == R.id.action_refresh) {
+//            updateWeather();
+//            return true;
+//        }
         if (id == R.id.action_settings) {
             startActivity(new Intent(getActivity(), SettingsActivity.class));
+            return true;
+        }
+
+        if (id == R.id.action_map) {
+            openPreferredLocationInMap();
             return true;
         }
 
         return super.onOptionsItemSelected(item);
     }
 
+    private void openPreferredLocationInMap() {
+        if (null != mForecastAdapter) {
+            Cursor cursor = mForecastAdapter.getCursor();
+
+            if (null != cursor) {
+                cursor.moveToPosition(0);
+                String posLat = cursor.getString(COL_COORD_LAT);
+                String posLong = cursor.getString(COL_COORD_LONG);
+
+
+                // Using the URI scheme for showing a location found on a map. This intent is detailed in
+                // the "Common Intents" page of the Android's developer site:
+                // http://developer.android.com/guide/components/intents-common.html#Maps
+                Uri geoLocation = Uri.parse("geo:" + posLat + "," + posLong);
+
+                Intent mapIntent = new Intent(Intent.ACTION_VIEW); // action view displays data to the user
+                mapIntent.setData(geoLocation);
+
+                // Only start activity if it resolves successfully
+                if (mapIntent.resolveActivity(getContext().getPackageManager()) != null) {
+                    startActivity(mapIntent);
+                }
+//      else {
+//            Log.d(LOG_TAG, "Couldn't call " + location + ", no receiving apps installed");
+//        }
+            }
+
+        }
+    }
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
@@ -131,7 +153,7 @@ public class ForecastFragment extends Fragment implements LoaderManager.LoaderCa
                 Cursor cursor = (Cursor) adapterView.getItemAtPosition(position);
                 if (cursor != null) {
                     String locationSetting = Utility.getPreferredLocation(getActivity());
-                    ( (Callback) getActivity())
+                    ((Callback) getActivity())
                             .onItemSelected(WeatherContract.WeatherEntry.buildWeatherLocationWithDate(
                                     locationSetting, cursor.getLong(COL_WEATHER_DATE)
                             ));
@@ -171,13 +193,9 @@ public class ForecastFragment extends Fragment implements LoaderManager.LoaderCa
     }
 
     private void updateWeather() {
-//        FetchWeatherTask weatherTask = new FetchWeatherTask(getActivity());
-//        String location = Utility.getPreferredLocation(getActivity());
-//        weatherTask.execute(location);
 
-        Intent intent = new Intent(getActivity(), SunshineService.class);
-        intent.putExtra(SunshineService.LOCATION_QUERY_EXTRA, Utility.getPreferredLocation(getActivity()));
-        getActivity().startService(intent);
+
+        SunshineSyncAdapter.syncImmediately(getActivity());
     }
 
     @Override
@@ -219,7 +237,7 @@ public class ForecastFragment extends Fragment implements LoaderManager.LoaderCa
     public void onLoadFinished(Loader<Cursor> loader, Cursor data) {
         mForecastAdapter.swapCursor(data);
 
-        if ( mPosition != ListView.INVALID_POSITION) {
+        if (mPosition != ListView.INVALID_POSITION) {
             // If we don't need to restart the loader, and there's a desired position to restore,
             // do so now.
             mListView.smoothScrollToPosition(mPosition);
@@ -234,8 +252,17 @@ public class ForecastFragment extends Fragment implements LoaderManager.LoaderCa
 
     public void setUseTodayLayout(boolean useTodayLayout) {
         mUseTodayLayout = useTodayLayout;
-        if (mForecastAdapter != null ) {
+        if (mForecastAdapter != null) {
             mForecastAdapter.setUseTodayLayout(mUseTodayLayout);
         }
+    }
+
+    /**
+     * A callback interface that all activities containing this fragment must implement. This
+     * mechanism allows activities to be notified of item selections.
+     */
+    public interface Callback {
+        // Callback for when an item has been selected.
+        public void onItemSelected(Uri dateUri);
     }
 }
